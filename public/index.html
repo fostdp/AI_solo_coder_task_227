@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音乐节拍闯关</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <div id="menu-screen" class="screen">
+            <h1>🎵 音乐节拍闯关 🎵</h1>
+            <div class="user-info" id="user-info">
+                <span id="user-score">积分: 0</span>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="songs">曲库</button>
+                <button class="nav-tab" data-tab="battle">对战</button>
+                <button class="nav-tab" data-tab="shop">商店</button>
+                <button class="nav-tab" data-tab="import">导入</button>
+            </div>
+            
+            <div id="tab-songs" class="tab-content">
+                <h2>选择歌曲</h2>
+                <div id="song-list" class="song-list"></div>
+            </div>
+            
+            <div id="tab-battle" class="tab-content hidden">
+                <h2>在线对战</h2>
+                <div class="battle-section">
+                    <div class="player-name-input">
+                        <label>昵称:</label>
+                        <input type="text" id="player-name" placeholder="输入你的昵称" maxlength="10">
+                    </div>
+                    <div class="battle-actions">
+                        <button id="create-room-btn" class="btn btn-primary">创建房间</button>
+                        <div class="join-room-input">
+                            <input type="text" id="room-id-input" placeholder="输入房间号" maxlength="6">
+                            <button id="join-room-btn" class="btn">加入房间</button>
+                        </div>
+                    </div>
+                    <h3>在线房间</h3>
+                    <div id="room-list" class="room-list"></div>
+                </div>
+            </div>
+            
+            <div id="tab-shop" class="tab-content hidden">
+                <h2>皮肤商店</h2>
+                <div class="shop-tabs">
+                    <button class="shop-tab active" data-shop="note">音符皮肤</button>
+                    <button class="shop-tab" data-shop="background">背景皮肤</button>
+                </div>
+                <div id="shop-note" class="shop-content"></div>
+                <div id="shop-background" class="shop-content hidden"></div>
+            </div>
+            
+            <div id="tab-import" class="tab-content hidden">
+                <h2>导入MIDI文件</h2>
+                <div class="import-section">
+                    <div class="form-group">
+                        <label>歌曲名称:</label>
+                        <input type="text" id="import-name" placeholder="输入歌曲名称">
+                    </div>
+                    <div class="form-group">
+                        <label>MIDI文件:</label>
+                        <input type="file" id="midi-file" accept=".mid,.midi">
+                    </div>
+                    <div class="form-group">
+                        <label>难度:</label>
+                        <select id="import-difficulty">
+                            <option value="1">简单</option>
+                            <option value="2">中等</option>
+                            <option value="3">困难</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>BPM (可选):</label>
+                        <input type="number" id="import-bpm" placeholder="默认120" min="60" max="240">
+                    </div>
+                    <button id="import-btn" class="btn btn-primary">导入并生成谱面</button>
+                    <p class="import-hint">提示: 由于浏览器限制，MIDI音频需要您自行准备。系统会根据MIDI的节奏自动生成谱面。</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="room-screen" class="screen hidden">
+            <div class="room-header">
+                <h2>对战房间</h2>
+                <div class="room-id">房间号: <span id="current-room-id"></span></div>
+            </div>
+            <div class="room-players">
+                <div id="player1" class="player-slot">
+                    <div class="player-avatar">🎮</div>
+                    <div class="player-name" id="player1-name">等待玩家...</div>
+                    <div class="player-status" id="player1-status"></div>
+                </div>
+                <div class="vs-text">VS</div>
+                <div id="player2" class="player-slot">
+                    <div class="player-avatar">🎮</div>
+                    <div class="player-name" id="player2-name">等待玩家...</div>
+                    <div class="player-status" id="player2-status"></div>
+                </div>
+            </div>
+            <div class="room-actions">
+                <button id="ready-btn" class="btn btn-primary">准备</button>
+                <button id="leave-room-btn" class="btn">离开房间</button>
+            </div>
+        </div>
+        
+        <div id="game-screen" class="screen hidden">
+            <div class="game-info">
+                <div class="info-item">
+                    <span class="label">歌曲:</span>
+                    <span id="current-song" class="value"></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">分数:</span>
+                    <span id="score" class="value">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">连击:</span>
+                    <span id="combo" class="value">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">判定:</span>
+                    <span id="judgment" class="value"></span>
+                </div>
+            </div>
+            
+            <div id="battle-overlay" class="battle-overlay hidden">
+                <div class="opponent-info">
+                    <span id="opponent-name">对手</span>
+                    <span id="opponent-score">0</span>
+                    <span id="opponent-combo">0连击</span>
+                </div>
+            </div>
+            
+            <canvas id="game-canvas"></canvas>
+            
+            <div class="controls">
+                <div class="key-hints">
+                    <div class="key-hint" data-lane="0">D</div>
+                    <div class="key-hint" data-lane="1">F</div>
+                    <div class="key-hint" data-lane="2">J</div>
+                    <div class="key-hint" data-lane="3">K</div>
+                </div>
+                <p>使用 D、F、J、K 键对应 4 个轨道</p>
+            </div>
+        </div>
+        
+        <div id="result-screen" class="screen hidden">
+            <h2>🎉 游戏结束 🎉</h2>
+            <div class="result-info">
+                <div class="result-item">
+                    <span class="label">歌曲:</span>
+                    <span id="result-song" class="value"></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">总分:</span>
+                    <span id="result-score" class="value"></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">最高连击:</span>
+                    <span id="result-combo" class="value"></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Perfect:</span>
+                    <span id="result-perfect" class="value"></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Good:</span>
+                    <span id="result-good" class="value"></span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Miss:</span>
+                    <span id="result-miss" class="value"></span>
+                </div>
+                <div id="battle-result" class="battle-result hidden">
+                    <div class="result-item">
+                        <span class="label">对手分数:</span>
+                        <span id="opponent-result-score" class="value"></span>
+                    </div>
+                    <div class="result-item big-result">
+                        <span id="battle-result-text" class="value"></span>
+                    </div>
+                </div>
+            </div>
+            <button id="back-to-menu" class="btn">返回菜单</button>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
